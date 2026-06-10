@@ -1,0 +1,6 @@
+@NexusCRM.Web_HostAddress = http://localhost:5128
+
+GET {{NexusCRM.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
