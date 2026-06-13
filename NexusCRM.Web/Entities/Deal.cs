@@ -22,7 +22,12 @@ public class Deal
 
     public DateTime? Deadline { get; set; }
 
+    [Required]
     public int CustomerId { get; set; }
 
     public Customer? Customer { get; set; }
+
+    public int? CompanyId { get; set; }
+
+    public Company? Company { get; set; }
 }
