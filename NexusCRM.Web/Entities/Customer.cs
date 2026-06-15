@@ -6,6 +6,7 @@ namespace NexusCRM.Web.Entities;
 public class Customer
 {
     public int Id { get; set; }
+
     public string? FullName { get; set; }
 
     [Required]
@@ -25,4 +26,6 @@ public class Customer
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public List<Deal>? Deals { get; set; }
+
+    public int CompanyId { get; set; }
 }

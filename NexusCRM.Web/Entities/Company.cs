@@ -25,7 +25,7 @@ namespace NexusCRM.Web.Entities
         [Required]
         public Address? Address { get; set; }
 
-        public bool isActive { get; set; } = true;
+        public bool IsActive { get; set; } = true;
 
         [Required]
         public DateOnly FoundedDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
