@@ -5,8 +5,8 @@ namespace NexusCRM.Web.Services.Interfaces;
 public interface INoteService
 {
     Task<Result<bool>> AddAsync(CreateNoteDto dto);
-    Task<Result<bool>> Update(int id, UpdateNoteDto? dto);
-    Task<Result<bool>> Delete(int id);
+    Task<Result<bool>> UpdateAsync(int id, UpdateNoteDto? dto);
+    Task<Result<bool>> DeleteAsync(int id);
 
     Task<Result<List<DetailsNoteDto>>> GetAllAsync();
     Task<Result<DetailsNoteDto>> GetByIdAsync(int id);

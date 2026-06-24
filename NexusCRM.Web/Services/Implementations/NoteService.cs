@@ -27,7 +27,7 @@ public class NoteService(INoteRepository repository) : INoteService
         return Result<bool>.Success();
     }
 
-    public async Task<Result<bool>> Delete(int id)
+    public async Task<Result<bool>> DeleteAsync(int id)
     {
         var note = await _repository.GetByIdAsync(id);
 
@@ -163,7 +163,7 @@ public class NoteService(INoteRepository repository) : INoteService
         
     }
 
-    public async Task<Result<bool>> Update(int id, UpdateNoteDto? dto)
+    public async Task<Result<bool>> UpdateAsync(int id, UpdateNoteDto? dto)
     {
         if (dto is null)
             return Result<bool>.Fail("Invalid note data");
