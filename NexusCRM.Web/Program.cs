@@ -37,12 +37,10 @@ builder.Services.AddScoped<IWorkTaskService, WorkTaskService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    //app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//app.MapOpenApi();
+app.UseSwagger();
+//app.UseSwaggerUI();
+app.UseSwaggerUI(options => options.RoutePrefix = string.Empty);
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

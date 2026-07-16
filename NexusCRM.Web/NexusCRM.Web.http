@@ -4,3 +4,6 @@ GET {{NexusCRM.Web_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+GET {{NexusCRM.Web_HostAddress}}//api/companies
+Accept: application/json
