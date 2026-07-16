@@ -23,7 +23,10 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         foreach (var fk in modelBuilder.Model.GetEntityTypes().SelectMany(t => t.GetForeignKeys()))
-            fk.DeleteBehavior = DeleteBehavior.Restrict;
+        {
+            if (!fk.IsOwnership)
+                fk.DeleteBehavior = DeleteBehavior.Restrict;
+        }
 
         modelBuilder.Entity<Company>().OwnsOne(c => c.Address);
         modelBuilder.Entity<Customer>().OwnsOne(c => c.Address);
@@ -34,5 +37,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Company>().HasIndex(c => c.Name).IsUnique();
         modelBuilder.Entity<Customer>().HasIndex(c => c.Email).IsUnique();
         modelBuilder.Entity<Customer>().HasIndex(c => c.PhoneNumber).IsUnique();
+
+        modelBuilder.Entity<Deal>()
+            .Property(d => d.EstimatedValue)
+            .HasPrecision(18, 2);
     }
 }
