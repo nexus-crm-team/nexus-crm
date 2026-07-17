@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using NexusCRM.Web.Entities;
 
 namespace NexusCRM.Web.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityUserContext<User>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
@@ -13,7 +14,6 @@ public class AppDbContext : DbContext
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Deal> Deals { get; set; }
     public DbSet<Company> Companies { get; set; }
-    public DbSet<User> Users { get; set; }
     public DbSet<WorkTask> Tasks { get; set; }
     public DbSet<Note> Notes { get; set; }
     public DbSet<FollowUp> FollowUps { get; set; }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NexusCRM.Web.Data;
+using NexusCRM.Web.Entities;
 using NexusCRM.Web.Repositories.Implementations;
 using NexusCRM.Web.Repositories.Interfaces;
 using NexusCRM.Web.Services.Implementations;
@@ -34,6 +35,15 @@ builder.Services.AddScoped<IFollowUpService, FollowUpService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<INoteService, NoteService>();
 builder.Services.AddScoped<IWorkTaskService, WorkTaskService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddIdentityCore<User>(
+    options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = false;
+        options.User.RequireUniqueEmail = true;
+    }).AddEntityFrameworkStores<AppDbContext>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
