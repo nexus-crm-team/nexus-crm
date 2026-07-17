@@ -50,7 +50,11 @@ var app = builder.Build();
 //app.MapOpenApi();
 app.UseSwagger();
 //app.UseSwaggerUI();
-app.UseSwaggerUI(options => options.RoutePrefix = string.Empty);
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "NexusCRM.Web v1");
+    options.RoutePrefix = string.Empty;
+});
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
