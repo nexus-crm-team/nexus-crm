@@ -76,6 +76,15 @@ public class CompanyService(ICompanyRepository repository) : ICompanyService
         if (company is null)
             return Result<bool>.Fail("Company Not Found");
 
+        if (await _repository.HasCustomersAsync(id))
+            return Result<bool>.Fail("Cannot Delete Company With Existing Customers");
+
+        if (await _repository.HasDealsAsync(id))
+            return Result<bool>.Fail("Cannot Delete Company With Existing Deals");
+
+        if (await _repository.HasUsersAsync(id))
+            return Result<bool>.Fail("Cannot Delete Company With Existing Users");
+
         await _repository.Delete(company);
         await _repository.SaveAsync();
 

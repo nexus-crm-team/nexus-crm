@@ -140,4 +140,13 @@ public class CompanyRepository : ICompanyRepository
     public async Task<int> GetDealCountAsync(int id)
             => await _context.Deals
             .CountAsync(deal => deal.CompanyId == id);
+
+    public async Task<bool> HasCustomersAsync(int companyId)
+    => await _context.Customers.AnyAsync(customer => customer.CompanyId == companyId);
+
+    public async Task<bool> HasDealsAsync(int companyId)
+        => await _context.Deals.AnyAsync(deal => deal.CompanyId == companyId);
+
+    public async Task<bool> HasUsersAsync(int companyId)
+        => await _context.Users.AnyAsync(user => user.CompanyId == companyId);
 }

@@ -37,4 +37,8 @@ public interface ICompanyRepository : IRepository<Company>
     Task<int> GetCustomerCountAsync(int companyId);
 
     Task<int> GetDealCountAsync(int companyId);
+
+    Task<bool> HasCustomersAsync(int companyId);
+    Task<bool> HasDealsAsync(int companyId);
+    Task<bool> HasUsersAsync(int companyId);
 }
