@@ -6,14 +6,14 @@ namespace NexusCRM.Web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class FollowUpsController(IFollowUpService service) : Controller
+public class FollowUpsController(IFollowUpService service) : ApiControllerBase
 {
     private readonly IFollowUpService _service = service;
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         var result = await _service.GetAllAsync();
-        return Ok(result);
+        return HandleResult(result);
     }
 
     // GET api/<NotesController>/5
@@ -21,7 +21,7 @@ public class FollowUpsController(IFollowUpService service) : Controller
     public async Task<IActionResult> Get(int id)
     {
         var result = await _service.GetByIdAsync(id);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     // POST api/<NotesController>
@@ -29,7 +29,7 @@ public class FollowUpsController(IFollowUpService service) : Controller
     public async Task<IActionResult> Post([FromBody] CreateFollowUpDto? dto)
     {
         var result = await _service.AddAsync(dto);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     // PUT api/<NotesController>/5
@@ -37,7 +37,7 @@ public class FollowUpsController(IFollowUpService service) : Controller
     public async Task<IActionResult> Put(int id, [FromBody] UpdateFollowUpDto? dto)
     {
         var result = await _service.UpdateAsync(id, dto);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     // DELETE api/<NotesController>/5
@@ -45,6 +45,6 @@ public class FollowUpsController(IFollowUpService service) : Controller
     public async Task<IActionResult> Delete(int id)
     {
         var result = await _service.DeleteAsync(id);
-        return Ok(result);
+        return HandleResult(result);
     }
 }
