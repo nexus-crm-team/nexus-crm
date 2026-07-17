@@ -47,4 +47,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+//TODO
+//app.UseExceptionHandler();
+
 app.Run();
