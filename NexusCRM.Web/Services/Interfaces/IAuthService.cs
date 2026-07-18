@@ -4,6 +4,13 @@ namespace NexusCRM.Web.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<Result<bool>> RegisterAsync(RegisterCompanyAdminDto dto);
-    Task<Result<bool>> LoginAsync(LoginUserDto dto);
+    Task<Result<AuthResponseDto>> RegisterCompanyAdminAsync(
+        RegisterCompanyAdminDto dto);
+
+    Task<Result<AuthResponseDto>> LoginAsync(
+        LoginUserDto dto);
+
+    Task<Result<bool>> RegisterCompanyEmployeeAsync(
+        int companyId,
+        RegisterCompanyEmployeeDto dto);
 }

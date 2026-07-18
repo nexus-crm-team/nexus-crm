@@ -12,6 +12,8 @@ public class RegisterCompanyAdminDto
     public string CompanyEmail { get; set; } = null!;
     [Phone]
     public string CompanyPhone { get; set; } = null!;
+    [Required]
+    public Address CompanyAddress { get; set; } = null!;
 
     // Admin user data
     public string UserName { get; set; } = null!;

@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using NexusCRM.Web.DTOs.FollowUps;
-using NexusCRM.Web.DTOs.Notes;
+﻿using NexusCRM.Web.DTOs.Notes;
 using NexusCRM.Web.Entities;
 using NexusCRM.Web.Repositories.Interfaces;
 using NexusCRM.Web.Services.Interfaces;

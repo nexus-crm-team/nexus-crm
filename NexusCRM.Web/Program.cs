@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using NexusCRM.Web.Data;
 using NexusCRM.Web.Entities;
+using NexusCRM.Web.Entities.Enums;
 using NexusCRM.Web.Repositories.Implementations;
 using NexusCRM.Web.Repositories.Interfaces;
 using NexusCRM.Web.Services.Implementations;
 using NexusCRM.Web.Services.Interfaces;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +54,37 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var jwtSecret = jwtSettings["Secret"]
+    ?? throw new InvalidOperationException("JWT secret is not configured.");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings["Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = jwtSettings["Audience"],
+
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSecret)),
+
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CompanyAdmin", policy =>
+        policy.RequireClaim("role", UserRole.Admin.ToString()));
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -66,6 +101,7 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowClient");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
