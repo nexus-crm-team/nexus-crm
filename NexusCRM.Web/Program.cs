@@ -44,19 +44,28 @@ builder.Services.AddIdentityCore<User>(
         options.User.RequireUniqueEmail = true;
     }).AddEntityFrameworkStores<AppDbContext>();
 
+builder.Services.AddCors(options =>
+    options.AddPolicy("AllowClient", policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 //app.MapOpenApi();
-app.UseSwagger();
+//app.UseSwagger();
 //app.UseSwaggerUI();
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "NexusCRM.Web v1");
-    options.RoutePrefix = string.Empty;
-});
+//app.UseSwaggerUI(options =>
+//{
+//    options.SwaggerEndpoint("/swagger/v1/swagger.json", "NexusCRM.Web v1");
+//    options.RoutePrefix = string.Empty;
+//});
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowClient");
+
 app.UseAuthorization();
 
 app.MapControllers();
