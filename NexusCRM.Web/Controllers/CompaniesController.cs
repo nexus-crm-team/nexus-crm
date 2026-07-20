@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using NexusCRM.Web.DTOs.Companies;
 using NexusCRM.Web.Services.Interfaces;
 
@@ -6,6 +7,7 @@ namespace NexusCRM.Web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Policy = "CompanyAdmin")]
 public class CompaniesController(ICompanyService service) : ApiControllerBase
 {
     private readonly ICompanyService _service = service;
