@@ -1,139 +1,325 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiSend } from "../api";
+import { CustomerStatusBadge } from "../components/StatusBadge";
+import EmptyState from "../components/EmptyState";
 
-// Matches CustomerStatus enum on the backend: 0..4
-const CUSTOMER_STATUS = ["New", "Active", "Connected", "Inactive", "Lost"];
+// Matches backend CustomerStatus enum 0–4
+const STATUS_OPTIONS = [
+  { value: 0, label: "New"       },
+  { value: 1, label: "Active"    },
+  { value: 2, label: "Connected" },
+  { value: 3, label: "Inactive"  },
+  { value: 4, label: "Lost"      },
+];
 
 const emptyForm = {
-  fullName: "",
-  email: "",
-  phoneNumber: "",
-  companyId: "",
-  country: "Armenia",
-  city: "Yerevan",
-  street: "",
+  fullName: "", email: "", phoneNumber: "",
+  companyId: "", country: "Armenia", city: "Yerevan", street: "",
 };
+
+// Avatar helpers
+function avatarColor(name = "") {
+  const palette = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#3b82f6","#06b6d4"];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
+}
+function initials(name = "") {
+  return name.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// Icons
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+const CloseIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+const UsersIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+  </svg>
+);
+const MailIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+  </svg>
+);
+const PhoneIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.12 1.18 2 2 0 012.1.01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.19 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+  </svg>
+);
+const BuildingSmIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+  </svg>
+);
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [error, setError] = useState("");
+  const [loading, setLoading]     = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm]           = useState(emptyForm);
+  const [saving, setSaving]       = useState(false);
+  const [error, setError]         = useState("");
+  const [filter, setFilter]       = useState("all"); // "all" | status index
 
   function set(field, value) {
-    setForm({ ...form, [field]: value });
+    setForm(f => ({ ...f, [field]: value }));
   }
 
-  async function loadCustomers() {
-    const result = await apiGet("/customers");
-    if (result.isSuccess) setCustomers(result.data);
-    else setError(result.message);
+  async function load() {
+    const [cr, cor] = await Promise.all([apiGet("/customers"), apiGet("/companies")]);
+    if (cr.isSuccess)  setCustomers(cr.data);
+    if (cor.isSuccess) setCompanies(cor.data);
+    setLoading(false);
   }
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([apiGet("/customers"), apiGet("/companies")]).then(
-      ([customersResult, companiesResult]) => {
-        if (ignore) return;
-        if (customersResult.isSuccess) setCustomers(customersResult.data);
-        else setError(customersResult.message);
-        if (companiesResult.isSuccess) setCompanies(companiesResult.data);
-      }
-    );
+    Promise.all([apiGet("/customers"), apiGet("/companies")]).then(([cr, cor]) => {
+      if (ignore) return;
+      if (cr.isSuccess)  setCustomers(cr.data);
+      if (cor.isSuccess) setCompanies(cor.data);
+      setLoading(false);
+    });
     return () => { ignore = true; };
   }, []);
 
-  async function addCustomer(e) {
+  async function handleAdd(e) {
     e.preventDefault();
+    setSaving(true);
     setError("");
-    const result = await apiSend("/customers", "POST", {
+    const r = await apiSend("/customers", "POST", {
       fullName: form.fullName,
       email: form.email,
       phoneNumber: form.phoneNumber || null,
       companyId: Number(form.companyId),
-      address: {
-        country: form.country,
-        region: "-",
-        city: form.city,
-        street: form.street || "-",
-      },
+      address: { country: form.country, region: "-", city: form.city, street: form.street || "-" },
     });
-    if (result.isSuccess) {
+    setSaving(false);
+    if (r.isSuccess) {
       setForm(emptyForm);
-      loadCustomers();
+      setShowModal(false);
+      load();
     } else {
-      setError(result.message);
+      setError(r.message);
     }
   }
 
-  async function deleteCustomer(id) {
-    setError("");
-    const result = await apiSend(`/customers/${id}`, "DELETE");
-    if (result.isSuccess) loadCustomers();
-    else setError(result.message);
+  async function handleDelete(id) {
+    if (!window.confirm("Delete this customer?")) return;
+    const r = await apiSend(`/customers/${id}`, "DELETE");
+    if (r.isSuccess) load();
+    else setError(r.message);
   }
 
   function companyName(id) {
-    const company = companies.find((c) => c.id === id);
-    return company ? company.name : `#${id}`;
+    return companies.find(c => c.id === id)?.name ?? `#${id}`;
   }
+
+  function closeModal() {
+    setShowModal(false);
+    setForm(emptyForm);
+    setError("");
+  }
+
+  const filtered = filter === "all"
+    ? customers
+    : customers.filter(c => c.status === Number(filter));
 
   return (
     <div>
-      <h2>Customers</h2>
-
-      <form onSubmit={addCustomer} className="card">
-        <div className="row">
-          <input value={form.fullName} onChange={(e) => set("fullName", e.target.value)}
-                 placeholder="Full name" required maxLength={100} />
-          <input value={form.email} onChange={(e) => set("email", e.target.value)}
-                 placeholder="Email" type="email" required maxLength={30} />
-          <input value={form.phoneNumber} onChange={(e) => set("phoneNumber", e.target.value)}
-                 placeholder="Phone (optional)" />
+      {/* Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Customers</h1>
+          <p className="page-subtitle">{customers.length} customer{customers.length !== 1 ? "s" : ""} in your CRM</p>
         </div>
-        <div className="row">
-          <select value={form.companyId} onChange={(e) => set("companyId", e.target.value)} required>
-            <option value="">— Select company —</option>
-            {companies.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <input value={form.country} onChange={(e) => set("country", e.target.value)}
-                 placeholder="Country" required />
-          <input value={form.city} onChange={(e) => set("city", e.target.value)}
-                 placeholder="City" required />
-          <input value={form.street} onChange={(e) => set("street", e.target.value)}
-                 placeholder="Street" />
+        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <PlusIcon /> Add Customer
+        </button>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex-center gap-8" style={{ marginBottom: 20, flexWrap: "wrap" }}>
+        <button
+          className={`badge ${filter === "all" ? "badge-accent" : "badge-neutral"}`}
+          style={{ cursor: "pointer", border: "none", padding: "6px 14px", fontSize: 13 }}
+          onClick={() => setFilter("all")}
+        >
+          All ({customers.length})
+        </button>
+        {STATUS_OPTIONS.map(s => {
+          const count = customers.filter(c => c.status === s.value).length;
+          if (count === 0) return null;
+          return (
+            <button
+              key={s.value}
+              className={`badge ${filter === String(s.value) ? "badge-accent" : "badge-neutral"}`}
+              style={{ cursor: "pointer", border: "none", padding: "6px 14px", fontSize: 13 }}
+              onClick={() => setFilter(String(s.value))}
+            >
+              {s.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {error && !showModal && (
+        <div className="alert alert-error">{error}</div>
+      )}
+
+      {/* Customer Cards */}
+      {loading ? (
+        <div className="loading-wrap"><div className="spinner" /></div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<UsersIcon />}
+          title="No customers found"
+          subtitle={filter === "all" ? "Add your first customer to get started" : "No customers with this status"}
+        />
+      ) : (
+        <div className="cards-grid">
+          {filtered.map(c => {
+            const bg = avatarColor(c.fullName);
+            return (
+              <div key={c.id} className="entity-card">
+                {/* Top */}
+                <div className="entity-card-top">
+                  <div
+                    className="avatar avatar-md"
+                    style={{ background: bg }}
+                  >
+                    {initials(c.fullName)}
+                  </div>
+                  <div className="entity-card-info">
+                    <div className="entity-card-name">{c.fullName}</div>
+                    <div className="entity-card-sub">{companyName(c.companyId)}</div>
+                  </div>
+                  <CustomerStatusBadge status={c.status} />
+                </div>
+
+                <hr className="entity-card-divider" />
+
+                <div className="entity-card-meta">
+                  <div className="entity-card-row">
+                    <MailIcon />
+                    <span className="truncate">{c.email}</span>
+                  </div>
+                  {c.phoneNumber && (
+                    <div className="entity-card-row">
+                      <PhoneIcon />
+                      <span>{c.phoneNumber}</span>
+                    </div>
+                  )}
+                  <div className="entity-card-row">
+                    <BuildingSmIcon />
+                    <span className="truncate">{companyName(c.companyId)}</span>
+                  </div>
+                </div>
+
+                <div className="entity-card-actions">
+                  <button
+                    className="btn btn-danger-soft btn-sm ml-auto"
+                    onClick={() => handleDelete(c.id)}
+                  >
+                    <TrashIcon /> Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <button type="submit">Add customer</button>
-      </form>
+      )}
 
-      {error && <p className="error">{error}</p>}
+      {/* Add Customer Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">Add New Customer</span>
+              <button className="btn-icon" onClick={closeModal}><CloseIcon /></button>
+            </div>
+            <form onSubmit={handleAdd}>
+              <div className="modal-body">
+                {error && <div className="alert alert-error">{error}</div>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Company</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {customers.map((c) => (
-            <tr key={c.id}>
-              <td><b>{c.fullName}</b></td>
-              <td>{c.email}</td>
-              <td>{c.phoneNumber || "—"}</td>
-              <td>{CUSTOMER_STATUS[c.status] ?? c.status}</td>
-              <td>{companyName(c.companyId)}</td>
-              <td>
-                <button className="danger" onClick={() => deleteCustomer(c.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-          {customers.length === 0 && (
-            <tr><td colSpan="6" className="muted">No customers yet</td></tr>
-          )}
-        </tbody>
-      </table>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
+                    <input className="form-input" value={form.fullName}
+                      onChange={e => set("fullName", e.target.value)}
+                      placeholder="Anna Petrosyan" required maxLength={100} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Company *</label>
+                    <select className="form-select" value={form.companyId}
+                      onChange={e => set("companyId", e.target.value)} required>
+                      <option value="">— Select company —</option>
+                      {companies.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Email *</label>
+                    <input className="form-input" type="email" value={form.email}
+                      onChange={e => set("email", e.target.value)}
+                      placeholder="anna@example.com" required maxLength={30} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phone</label>
+                    <input className="form-input" value={form.phoneNumber}
+                      onChange={e => set("phoneNumber", e.target.value)}
+                      placeholder="+374 99 123456" />
+                  </div>
+                </div>
+
+                <div className="form-row" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+                  <div className="form-group">
+                    <label className="form-label">Country</label>
+                    <input className="form-input" value={form.country}
+                      onChange={e => set("country", e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">City</label>
+                    <input className="form-input" value={form.city}
+                      onChange={e => set("city", e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Street</label>
+                    <input className="form-input" value={form.street}
+                      onChange={e => set("street", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? "Saving…" : "Add Customer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
