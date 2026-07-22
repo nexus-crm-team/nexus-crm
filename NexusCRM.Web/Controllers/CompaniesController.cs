@@ -7,7 +7,7 @@ namespace NexusCRM.Web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Policy = "CompanyAdmin")]
+[AllowAnonymous]
 public class CompaniesController(ICompanyService service) : ApiControllerBase
 {
     private readonly ICompanyService _service = service;
