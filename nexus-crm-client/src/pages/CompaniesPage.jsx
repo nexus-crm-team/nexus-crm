@@ -39,16 +39,28 @@ const MapPinIcon = () => (
     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
   </svg>
 );
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
 const TrashIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+  </svg>
+);
+const EditIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null);
   const [form, setForm]           = useState(emptyForm);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
@@ -57,57 +69,91 @@ export default function CompaniesPage() {
     setForm(f => ({ ...f, [field]: value }));
   }
 
-  async function load() {
-    const r = await apiGet("/companies");
-    if (r.isSuccess) setCompanies(r.data);
+  async function load(keyword = "") {
+    setLoading(true);
+    const endpoint = keyword.trim() ? `/companies/search?keyword=${encodeURIComponent(keyword)}` : "/companies";
+    const r = await apiGet(endpoint);
+    if (r.isSuccess && Array.isArray(r.data)) setCompanies(r.data);
     setLoading(false);
   }
 
   useEffect(() => {
-    let ignore = false;
-    apiGet("/companies").then(r => {
-      if (ignore) return;
-      if (r.isSuccess) setCompanies(r.data);
-      setLoading(false);
-    });
-    return () => { ignore = true; };
+    load();
   }, []);
 
-  async function handleAdd(e) {
+  function handleSearch(e) {
+    const val = e.target.value;
+    setSearchKeyword(val);
+    load(val);
+  }
+
+  function handleOpenCreate() {
+    setEditingCompany(null);
+    setForm(emptyForm);
+    setShowModal(true);
+  }
+
+  function handleOpenEdit(c) {
+    setEditingCompany(c);
+    setForm({
+      name: c.name || "",
+      email: c.email || "",
+      phone: c.phone || "",
+      industry: c.industry || "",
+      country: c.address?.country || "Armenia",
+      city: c.address?.city || "Yerevan",
+      street: c.address?.street || "",
+    });
+    setShowModal(true);
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const r = await apiSend("/companies", "POST", {
+
+    const method = editingCompany ? "PUT" : "POST";
+    const endpoint = editingCompany ? `/companies/${editingCompany.id}` : "/companies";
+
+    const payload = {
       name: form.name,
       email: form.email,
       phone: form.phone || null,
       industry: form.industry,
       address: { country: form.country, region: "-", city: form.city, street: form.street || "-" },
-    });
+    };
+
+    const r = await apiSend(endpoint, method, payload);
     setSaving(false);
     if (r.isSuccess) {
-      setForm(emptyForm);
-      setShowModal(false);
-      load();
+      closeModal();
+      load(searchKeyword);
     } else {
-      setError(r.message);
+      setError(r.message || "Failed to save company.");
     }
+  }
+
+  async function toggleActive(c) {
+    const action = c.isActive ? "deactivate" : "activate";
+    const r = await apiSend(`/companies/${c.id}/${action}`, "PATCH");
+    if (r.isSuccess) load(searchKeyword);
+    else setError(r.message);
   }
 
   async function handleDelete(id) {
     if (!window.confirm("Delete this company?")) return;
     const r = await apiSend(`/companies/${id}`, "DELETE");
-    if (r.isSuccess) load();
+    if (r.isSuccess) load(searchKeyword);
     else setError(r.message);
   }
 
   function closeModal() {
     setShowModal(false);
+    setEditingCompany(null);
     setForm(emptyForm);
     setError("");
   }
 
-  // Consistent color from company name
   function companyColor(name = "") {
     const palette = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#3b82f6"];
     let h = 0;
@@ -123,9 +169,23 @@ export default function CompaniesPage() {
           <h1 className="page-title">Companies</h1>
           <p className="page-subtitle">{companies.length} company{companies.length !== 1 ? "ies" : "y"} in your CRM</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+        <button className="btn btn-primary" onClick={handleOpenCreate}>
           <PlusIcon /> Add Company
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ position: "relative", marginBottom: 20, maxWidth: 400 }}>
+        <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)", display: "flex" }}>
+          <SearchIcon />
+        </div>
+        <input
+          className="form-input"
+          style={{ paddingLeft: 36 }}
+          placeholder="Search companies by name or industry…"
+          value={searchKeyword}
+          onChange={handleSearch}
+        />
       </div>
 
       {error && !showModal && (
@@ -138,8 +198,8 @@ export default function CompaniesPage() {
       ) : companies.length === 0 ? (
         <EmptyState
           icon={<BuildingIcon />}
-          title="No companies yet"
-          subtitle="Add your first company to get started"
+          title="No companies found"
+          subtitle={searchKeyword ? "No companies matching your search" : "Add your first company to get started"}
         />
       ) : (
         <div className="cards-grid">
@@ -159,7 +219,9 @@ export default function CompaniesPage() {
                   <div className="entity-card-name">{c.name}</div>
                   <div className="entity-card-sub">{c.industry}</div>
                 </div>
-                <ActiveBadge isActive={c.isActive} />
+                <div style={{ cursor: "pointer" }} onClick={() => toggleActive(c)} title="Click to toggle active state">
+                  <ActiveBadge isActive={c.isActive} />
+                </div>
               </div>
 
               <hr className="entity-card-divider" />
@@ -187,6 +249,12 @@ export default function CompaniesPage() {
               {/* Actions */}
               <div className="entity-card-actions">
                 <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => handleOpenEdit(c)}
+                >
+                  <EditIcon /> Edit
+                </button>
+                <button
                   className="btn btn-danger-soft btn-sm ml-auto"
                   onClick={() => handleDelete(c.id)}
                 >
@@ -198,16 +266,16 @@ export default function CompaniesPage() {
         </div>
       )}
 
-      {/* Add Company Modal */}
+      {/* Add / Edit Company Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
           <div className="modal">
             <div className="modal-header">
-              <span className="modal-title">Add New Company</span>
+              <span className="modal-title">{editingCompany ? "Edit Company" : "Add New Company"}</span>
               <button className="btn-icon" onClick={closeModal}><CloseIcon /></button>
             </div>
 
-            <form onSubmit={handleAdd}>
+            <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
 
@@ -263,7 +331,7 @@ export default function CompaniesPage() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={closeModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "Saving…" : "Add Company"}
+                  {saving ? "Saving…" : editingCompany ? "Update Company" : "Add Company"}
                 </button>
               </div>
             </form>
