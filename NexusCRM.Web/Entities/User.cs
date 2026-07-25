@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using NexusCRM.Web.Entities.Enums;
 
 namespace NexusCRM.Web.Entities;
@@ -6,6 +6,8 @@ namespace NexusCRM.Web.Entities;
 public class User : IdentityUser
 {
     public UserRole Role { get; set; }
+
+    public string? AvatarUrl { get; set; }
 
     public int CompanyId { get; set; }
 

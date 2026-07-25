@@ -109,17 +109,34 @@ export default function Sidebar({ currentPage, onNavigate, user, onLogout, darkM
             borderRadius: "var(--radius-sm)",
             border: "1px solid var(--border)",
             marginBottom: 6,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
           }}>
-            <div className="flex-between">
-              <span className="fw-600 truncate text-sm" style={{ maxWidth: 120 }}>
-                {user.userName || user.email}
-              </span>
-              <span className="badge badge-accent" style={{ fontSize: 10, padding: "2px 6px" }}>
-                {user.role}
-              </span>
-            </div>
-            <div className="text-xs text-3 truncate" style={{ marginTop: 2 }}>
-              {user.email}
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.userName || user.email}
+                className="avatar avatar-sm"
+                style={{ objectFit: "cover" }}
+              />
+            ) : (
+              <div className="avatar avatar-sm" style={{ background: "var(--accent)", flexShrink: 0 }}>
+                {(user.userName || user.email || "U").slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div className="flex-between">
+                <span className="fw-600 truncate text-sm" style={{ maxWidth: 90 }}>
+                  {user.userName || user.email}
+                </span>
+                <span className="badge badge-accent" style={{ fontSize: 10, padding: "2px 6px" }}>
+                  {user.role}
+                </span>
+              </div>
+              <div className="text-xs text-3 truncate" style={{ marginTop: 2 }}>
+                {user.email}
+              </div>
             </div>
           </div>
         )}

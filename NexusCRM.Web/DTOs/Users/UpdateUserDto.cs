@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace NexusCRM.Web.DTOs.Users;
 
@@ -10,6 +10,6 @@ public class UpdateUserDto
     public string Email { get; set; } = null!;
     [Required] 
     public string PhoneNumber { get; set; } = null!;
-    [Required] 
-    public string Password { get; set; } = null!;
+    public string? AvatarUrl { get; set; }
+    public string? Password { get; set; }
 }

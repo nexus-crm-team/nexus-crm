@@ -8,6 +8,7 @@ const emptyForm = {
   phoneNumber: "",
   password: "",
   role: 2, // 1 = Manager, 2 = Employee
+  avatarUrl: "",
 };
 
 // Icons
@@ -50,6 +51,21 @@ export default function EmployeesPage() {
     setForm(prev => ({ ...prev, [field]: value }));
   }
 
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setError("Image size should be less than 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        set("avatarUrl", reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   async function loadUsers() {
     const r = await apiGet("/users");
     if (r.isSuccess && Array.isArray(r.data)) {
@@ -80,6 +96,7 @@ export default function EmployeesPage() {
       email: form.email.trim(),
       phoneNumber: form.phoneNumber.trim(),
       password: form.password,
+      avatarUrl: form.avatarUrl || null,
       role: Number(form.role),
     };
 
@@ -116,7 +133,7 @@ export default function EmployeesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Company Employees</h1>
-          <p className="page-subtitle">Manage employees and managers for your company</p>
+          <p className="page-subtitle">Manage employees, managers, and profile photos</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           <PlusIcon /> Register Employee
@@ -138,12 +155,21 @@ export default function EmployeesPage() {
           {users.map(u => (
             <div key={u.id} className="entity-card">
               <div className="entity-card-top">
-                <div
-                  className="avatar avatar-md"
-                  style={{ background: u.role === "Admin" || u.role === 0 ? "var(--accent)" : "var(--info)" }}
-                >
-                  {(u.userName || u.email || "U").slice(0, 2).toUpperCase()}
-                </div>
+                {u.avatarUrl ? (
+                  <img
+                    src={u.avatarUrl}
+                    alt={u.userName || u.email}
+                    className="avatar avatar-md"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    className="avatar avatar-md"
+                    style={{ background: u.role === "Admin" || u.role === 0 ? "var(--accent)" : "var(--info)" }}
+                  >
+                    {(u.userName || u.email || "U").slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div className="entity-card-info">
                   <div className="entity-card-name">{u.userName || u.email}</div>
                   <div className="entity-card-sub">{u.email}</div>
@@ -184,6 +210,43 @@ export default function EmployeesPage() {
             <form onSubmit={handleAddEmployee}>
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
+
+                {/* Profile Photo Picker & Preview */}
+                <div className="flex-center gap-16" style={{ marginBottom: 16 }}>
+                  {form.avatarUrl ? (
+                    <img
+                      src={form.avatarUrl}
+                      alt="Preview"
+                      className="avatar avatar-lg"
+                      style={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div className="avatar avatar-lg" style={{ background: "var(--surface-2)", color: "var(--text-3)", border: "1.5px dashed var(--border-strong)" }}>
+                      Photo
+                    </div>
+                  )}
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Profile Photo (Optional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="form-input"
+                      style={{ padding: 6 }}
+                      onChange={handleFileChange}
+                    />
+                    <span className="text-xs text-3" style={{ marginTop: 2 }}>Upload JPG/PNG photo or enter image URL</span>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 16 }}>
+                  <input
+                    className="form-input"
+                    type="url"
+                    value={form.avatarUrl}
+                    onChange={e => set("avatarUrl", e.target.value)}
+                    placeholder="Or paste image URL (https://…)"
+                  />
+                </div>
 
                 <div className="form-row">
                   <div className="form-group">

@@ -1,4 +1,4 @@
-﻿using NexusCRM.Web.DTOs.Users;
+using NexusCRM.Web.DTOs.Users;
 using NexusCRM.Web.Entities;
 using NexusCRM.Web.Entities.Enums;
 using NexusCRM.Web.Repositories.Interfaces;
@@ -150,7 +150,10 @@ public class UserService(IUserRepository userRepository, ICompanyRepository comp
         user.UserName = dto.UserName;
         user.Email = dto.Email;
         user.PhoneNumber = dto.PhoneNumber;
-        user.PasswordHash = dto.Password;
+        if (!string.IsNullOrEmpty(dto.AvatarUrl))
+            user.AvatarUrl = dto.AvatarUrl;
+        if (!string.IsNullOrEmpty(dto.Password))
+            user.PasswordHash = dto.Password;
 
         _userRepository.Update(user);
         await _userRepository.SaveAsync();
@@ -169,8 +172,10 @@ public class UserService(IUserRepository userRepository, ICompanyRepository comp
             var userDto = new DetailsUserDto
             {
                 Id = user.Id,
+                UserName = user.UserName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
+                AvatarUrl = user.AvatarUrl,
                 Role = user.Role,
                 RegDate = user.RegDate,
                 CompanyId = user.CompanyId,
@@ -183,8 +188,10 @@ public class UserService(IUserRepository userRepository, ICompanyRepository comp
         => new()
         {
             Id = userEntity.Id,
+            UserName = userEntity.UserName,
             Email = userEntity.Email,
             PhoneNumber = userEntity.PhoneNumber,
+            AvatarUrl = userEntity.AvatarUrl,
             Role = userEntity.Role,
             RegDate = userEntity.RegDate,
             CompanyId = userEntity.CompanyId,

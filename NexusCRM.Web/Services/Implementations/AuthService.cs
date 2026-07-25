@@ -151,6 +151,7 @@ public class AuthService(
             UserName = userName,
             Email = email,
             PhoneNumber = phoneNumber,
+            AvatarUrl = dto.AvatarUrl?.Trim(),
             CompanyId = companyId,
             Role = dto.Role
         };
@@ -200,6 +201,7 @@ public class AuthService(
             UserId = user.Id,
             UserName = user.UserName ?? string.Empty,
             Email = user.Email ?? string.Empty,
+            AvatarUrl = user.AvatarUrl,
             CompanyId = user.CompanyId,
             Role = user.Role.ToString()
         };

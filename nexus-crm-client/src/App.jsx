@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import "./index.css";
+import notificationHub from "./hubs/notificationHub";
+import Toast from "./components/Toast";
+import "./styles/toast.css";
 import { getUserInfo, clearAuthSession } from "./api";
 import Sidebar from "./components/Sidebar";
 import DashboardPage from "./pages/DashboardPage";
@@ -29,6 +32,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("nexuscrm-theme") === "dark";
   });
+  const [notifications, setNotifications] = useState([]);
 
   // Apply theme to <html> element
   useEffect(() => {
@@ -36,8 +40,21 @@ export default function App() {
     localStorage.setItem("nexuscrm-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  // Listen for real‑time notifications
+  useEffect(() => {
+    notificationHub.on('ReceiveNotification', (notif) => {
+      setNotifications(prev => [...prev, { ...notif, id: Date.now() + Math.random() }]);
+    });
+    return () => {
+      notificationHub.off('ReceiveNotification');
+    };
+  }, []);
+
   function handleLoginSuccess(userData) {
+    // Existing login logic continues as before
+
     setUser(getUserInfo() || userData);
+    // After login we could fetch initial notifications if needed
     setPage("dashboard");
   }
 
@@ -45,6 +62,11 @@ export default function App() {
     clearAuthSession();
     setUser(null);
     setAuthView("login");
+  }
+
+  // Dismiss a notification
+  function dismissNotification(id) {
+    setNotifications(prev => prev.filter(n => n.id !== id));
   }
 
   // Unauthenticated view
@@ -78,6 +100,7 @@ export default function App() {
       <main className="main-content" key={page}>
         <PageComponent />
       </main>
+      <Toast notifications={notifications} onDismiss={dismissNotification} />
     </div>
   );
 }
