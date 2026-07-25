@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./index.css";
-import notificationHub from "./hubs/notificationHub";
+import { startNotificationHub, stopNotificationHub } from "./hubs/notificationHub";
 import Toast from "./components/Toast";
 import "./styles/toast.css";
 import { getUserInfo, clearAuthSession } from "./api";
@@ -40,15 +40,19 @@ export default function App() {
     localStorage.setItem("nexuscrm-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  // Listen for real‑time notifications
+  // Listen for real‑time notifications while logged in
   useEffect(() => {
-    notificationHub.on('ReceiveNotification', (notif) => {
+    if (!user) return;
+
+    startNotificationHub(notif => {
       setNotifications(prev => [...prev, { ...notif, id: Date.now() + Math.random() }]);
     });
+
     return () => {
-      notificationHub.off('ReceiveNotification');
+      stopNotificationHub();
+      setNotifications([]);
     };
-  }, []);
+  }, [user]);
 
   function handleLoginSuccess(userData) {
     // Existing login logic continues as before

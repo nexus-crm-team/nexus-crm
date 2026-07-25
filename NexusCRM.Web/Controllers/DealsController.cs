@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusCRM.Web.DTOs.Deals;
 using NexusCRM.Web.Entities.Enums;
@@ -7,6 +8,7 @@ namespace NexusCRM.Web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class DealsController : ApiControllerBase
 {
     private readonly IDealService _service;
@@ -107,9 +109,9 @@ public class DealsController : ApiControllerBase
     {
         var result = await _service.AddAsync(dto);
         // Send notification about new deal
-        if (dto != null)
+        if (result.IsSuccess)
         {
-            await _notificationService.BroadcastAsync("New Deal", $"Deal '{dto.Title}' created", "success");
+            await _notificationService.BroadcastAsync("New Deal", $"Deal '{dto!.Title}' created", "success");
         }
         return HandleResult(result);
     }
@@ -119,7 +121,10 @@ public class DealsController : ApiControllerBase
     {
         var result = await _service.UpdateAsync(id, dto);
         // Notify about deal update
-        await _notificationService.BroadcastAsync("Deal Updated", $"Deal #{id} updated", "info");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Updated", $"Deal #{id} updated", "info");
+        }
         return HandleResult(result);
     }
 
@@ -127,7 +132,10 @@ public class DealsController : ApiControllerBase
     public async Task<IActionResult> ChangeStatus(int id, [FromQuery] DealStatus status)
     {
         var result = await _service.ChangeStatusAsync(id, status);
-        await _notificationService.BroadcastAsync("Deal Status Changed", $"Deal #{id} status set to {status}", "info");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Status Changed", $"Deal #{id} status set to {status}", "info");
+        }
         return HandleResult(result);
     }
 
@@ -135,7 +143,10 @@ public class DealsController : ApiControllerBase
     public async Task<IActionResult> CloseAsWon(int id)
     {
         var result = await _service.CloseAsWonAsync(id);
-        await _notificationService.BroadcastAsync("Deal Won", $"Deal #{id} marked as won", "success");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Won", $"Deal #{id} marked as won", "success");
+        }
         return HandleResult(result);
     }
 
@@ -143,7 +154,10 @@ public class DealsController : ApiControllerBase
     public async Task<IActionResult> CloseAsLost(int id)
     {
         var result = await _service.CloseAsLostAsync(id);
-        await _notificationService.BroadcastAsync("Deal Lost", $"Deal #{id} marked as lost", "warning");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Lost", $"Deal #{id} marked as lost", "warning");
+        }
         return HandleResult(result);
     }
 
@@ -151,7 +165,10 @@ public class DealsController : ApiControllerBase
     public async Task<IActionResult> UpdateEstimatedValue(int id, [FromQuery] decimal value)
     {
         var result = await _service.UpdateEstimatedValueAsync(id, value);
-        await _notificationService.BroadcastAsync("Deal Value Updated", $"Deal #{id} value changed to {value}", "info");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Value Updated", $"Deal #{id} value changed to {value}", "info");
+        }
         return HandleResult(result);
     }
 
@@ -159,7 +176,10 @@ public class DealsController : ApiControllerBase
     public async Task<IActionResult> UpdateDeadline(int id, [FromQuery] DateTime? deadline)
     {
         var result = await _service.UpdateDeadlineAsync(id, deadline);
-        await _notificationService.BroadcastAsync("Deal Deadline Updated", $"Deal #{id} deadline changed", "info");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Deadline Updated", $"Deal #{id} deadline changed", "info");
+        }
         return HandleResult(result);
     }
 
@@ -167,7 +187,10 @@ public class DealsController : ApiControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var result = await _service.DeleteAsync(id);
-        await _notificationService.BroadcastAsync("Deal Deleted", $"Deal #{id} was deleted", "info");
+        if (result.IsSuccess)
+        {
+            await _notificationService.BroadcastAsync("Deal Deleted", $"Deal #{id} was deleted", "info");
+        }
         return HandleResult(result);
     }
 }

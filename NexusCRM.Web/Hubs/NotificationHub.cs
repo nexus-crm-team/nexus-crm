@@ -1,12 +1,22 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 
 namespace NexusCRM.Web.Hubs;
 
+[Authorize]
 public class NotificationHub : Hub
 {
-    // Clients can call this method to send a notification (optional)
-    public async Task SendNotification(string title, string message, string type = "info")
+    public static string CompanyGroup(int companyId) => $"company-{companyId}";
+
+    // Each connection only ever joins its own company's group, so a broadcast
+    // can never reach another tenant.
+    public override async Task OnConnectedAsync()
     {
-        await Clients.All.SendAsync("ReceiveNotification", new { title, message, type });
+        var value = Context.User?.FindFirstValue("companyId");
+        if (int.TryParse(value, out var companyId))
+            await Groups.AddToGroupAsync(Context.ConnectionId, CompanyGroup(companyId));
+
+        await base.OnConnectedAsync();
     }
 }
