@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusCRM.Web.DTOs.Notes;
 using NexusCRM.Web.Services.Interfaces;
 
@@ -8,6 +9,7 @@ namespace NexusCRM.Web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class NotesController(INoteService service) : ApiControllerBase
 {
     private readonly INoteService _service = service;

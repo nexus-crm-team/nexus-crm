@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NexusCRM.Web.Entities;
 
-public class Customer
+public class Customercd 
 {
     public int Id { get; set; }
 

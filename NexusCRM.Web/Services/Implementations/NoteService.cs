@@ -2,12 +2,18 @@
 using NexusCRM.Web.Entities;
 using NexusCRM.Web.Repositories.Interfaces;
 using NexusCRM.Web.Services.Interfaces;
+using System.Security.Claims;
 
 namespace NexusCRM.Web.Services.Implementations;
 
-public class NoteService(INoteRepository repository) : INoteService
+public class NoteService(INoteRepository repository,
+    IHttpContextAccessor httpContextAccessor) : INoteService
 {
     private readonly INoteRepository _repository = repository;
+    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+
+    private string? CurrentUserId
+        => _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     public async Task<Result<bool>> AddAsync(CreateNoteDto? dto)
     {
@@ -16,10 +22,15 @@ public class NoteService(INoteRepository repository) : INoteService
         if (string.IsNullOrWhiteSpace(dto.Content) || dto.Content.Length > 1000)
             return Result<bool>.Fail("Invalid note content");
 
+        var authorId = CurrentUserId;
+        if (string.IsNullOrWhiteSpace(authorId))
+            return Result<bool>.Fail("Invalid User Data");
+
         var note = new Note
         {
             Content = dto.Content,
             CreatedAt = DateTime.Now,
+            AuthorId = authorId,
         };
 
         await _repository.AddAsync(note);

@@ -2,12 +2,22 @@
 using NexusCRM.Web.Entities;
 using NexusCRM.Web.Repositories.Interfaces;
 using NexusCRM.Web.Services.Interfaces;
+using System.Security.Claims;
 
 namespace NexusCRM.Web.Services.Implementations;
 
-public class FollowUpService(IFollowUpRepository repository) : IFollowUpService
+public class FollowUpService(IFollowUpRepository repository,
+    IDealRepository dealRepository,
+    IWorkTaskRepository workTaskRepository,
+    IHttpContextAccessor httpContextAccessor) : IFollowUpService
 {
     private readonly IFollowUpRepository _repository = repository;
+    private readonly IDealRepository _dealRepository = dealRepository;
+    private readonly IWorkTaskRepository _workTaskRepository = workTaskRepository;
+    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+
+    private string? CurrentUserId
+        => _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     public async Task<Result<bool>> AddAsync(CreateFollowUpDto dto)
     {
@@ -15,10 +25,29 @@ public class FollowUpService(IFollowUpRepository repository) : IFollowUpService
             return Result<bool>.Fail("FollowUp cannot be null");
         if (string.IsNullOrWhiteSpace(dto.Content) || dto.Content.Length > 1000)
             return Result<bool>.Fail("Invalid note content");
+        if (dto.DealId < 1)
+            return Result<bool>.Fail("Invalid Input Data");
+
+        var userId = CurrentUserId;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result<bool>.Fail("Invalid User Data");
+
+        var deal = await _dealRepository.GetByIdAsync(dto.DealId);
+        if (deal is null)
+            return Result<bool>.Fail("Deal Not Found");
+
+        if (dto.TaskId is not null &&
+            !await _workTaskRepository.ExistsByIdAsync(dto.TaskId.Value))
+            return Result<bool>.Fail("Task Not Found");
 
         var folup = new FollowUp
         {
             Content = dto.Content,
+            CreatedAt = DateTime.Now,
+            DealId = dto.DealId,
+            TaskId = dto.TaskId,
+            AuthorId = userId,
+            AssignedUserId = userId,
         };
 
         await _repository.AddAsync(folup);
@@ -204,6 +233,10 @@ public class FollowUpService(IFollowUpRepository repository) : IFollowUpService
         var followUp = await _repository.GetByIdAsync(id);
         if (followUp is null)
             return Result<bool>.Fail("FollowUp Not Found");
+
+        if (updateDto.TaskId is not null &&
+            !await _workTaskRepository.ExistsByIdAsync(updateDto.TaskId.Value))
+            return Result<bool>.Fail("Task Not Found");
 
         followUp.Content = updateDto.Content;
         followUp.isCompleted = updateDto.IsCompleted;

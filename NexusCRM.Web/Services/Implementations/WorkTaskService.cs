@@ -1,25 +1,40 @@
-﻿using NexusCRM.Web.DTOs.Notes;
-using NexusCRM.Web.DTOs.Tasks;
+﻿using NexusCRM.Web.DTOs.Tasks;
 using NexusCRM.Web.Entities;
 using NexusCRM.Web.Repositories.Interfaces;
 using NexusCRM.Web.Services.Interfaces;
+using System.Security.Claims;
 
 namespace NexusCRM.Web.Services.Implementations;
 
-public class WorkTaskService(IWorkTaskRepository workTaskRepository, 
-    IUserRepository userRepository) : IWorkTaskService
+public class WorkTaskService(IWorkTaskRepository workTaskRepository,
+    IUserRepository userRepository,
+    IDealRepository dealRepository,
+    IHttpContextAccessor httpContextAccessor) : IWorkTaskService
 {
     private readonly IWorkTaskRepository _repository = workTaskRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly IDealRepository _dealRepository = dealRepository;
+    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+
+    private string? CurrentUserId
+        => _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     public async Task<Result<bool>> AddAsync(CreateTaskDto dto)
     {
         if (dto is null ||
             string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Length > 30 ||
-            string.IsNullOrWhiteSpace(dto.Description) || 
+            string.IsNullOrWhiteSpace(dto.Description) ||
             dto.Deadline == DateTime.MinValue ||
             dto.DealId < 1)
                 return Result<bool>.Fail("Invalid Input Data");
+
+        var userId = CurrentUserId;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Result<bool>.Fail("Invalid User Data");
+
+        var deal = await _dealRepository.GetByIdAsync(dto.DealId);
+        if (deal is null)
+            return Result<bool>.Fail("Deal Not Found");
 
         var entity = new WorkTask
         {
@@ -27,6 +42,7 @@ public class WorkTaskService(IWorkTaskRepository workTaskRepository,
             Description = dto.Description,
             Deadline = dto.Deadline,
             DealId = dto.DealId,
+            UserId = userId,
         };
 
         await _repository.AddAsync(entity);
@@ -234,6 +250,10 @@ public class WorkTaskService(IWorkTaskRepository workTaskRepository,
         var task = await _repository.GetByIdAsync(id);
         if (task is null)
             return Result<bool>.Fail("Task Not Found");
+
+        var deal = await _dealRepository.GetByIdAsync(dto.DealId);
+        if (deal is null)
+            return Result<bool>.Fail("Deal Not Found");
 
         task.Description = dto.Description;
         task.IsCompleted = dto.IsCompleted;
