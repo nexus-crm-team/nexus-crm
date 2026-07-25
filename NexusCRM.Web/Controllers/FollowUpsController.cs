@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusCRM.Web.DTOs.FollowUps;
 using NexusCRM.Web.Services.Interfaces;
 
@@ -6,6 +7,7 @@ namespace NexusCRM.Web.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class FollowUpsController(IFollowUpService service) : ApiControllerBase
 {
     private readonly IFollowUpService _service = service;
